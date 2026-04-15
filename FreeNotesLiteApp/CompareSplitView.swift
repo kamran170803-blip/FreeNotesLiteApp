@@ -30,10 +30,9 @@ struct CompareSplitView: View {
                     folderID: folderID,
                     notebookID: notebookID,
                     page: page,
-                    selectedTool: .pen,          // explicitly pass defaults
-                    selectedColorHex: "111111",
-                    lineWidth: 4,
-                    pdfPageIndex: 0
+                    toolPicker: nil,
+                    onCanvasCreated: { _ in },
+                    currentPDFPageIndex: .constant(0)   // Read-only
                 )
             } else {
                 VStack(spacing: 12) {

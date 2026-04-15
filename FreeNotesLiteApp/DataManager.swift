@@ -70,11 +70,23 @@ final class DataManager {
         }
     }
 
+    func saveScannedPDF(data: Data) -> String? {
+        ensurePDFFolderExists()
+        let fileName = UUID().uuidString + ".pdf"
+        let destinationURL = pdfFolderURL.appendingPathComponent(fileName)
+        do {
+            try data.write(to: destinationURL)
+            return fileName
+        } catch {
+            print("Failed to save scanned PDF: \(error)")
+            return nil
+        }
+    }
+
     func pdfURL(for fileName: String) -> URL {
         pdfFolderURL.appendingPathComponent(fileName)
     }
 
-    // FIXED: Accepts dictionary of per‑page drawings
     func exportAnnotatedPDF(originalURL: URL, drawingsPerPage: [Int: Data]) -> URL? {
         guard let document = PDFDocument(url: originalURL) else { return nil }
 
@@ -83,29 +95,32 @@ final class DataManager {
             .appendingPathComponent(UUID().uuidString + "_annotated.pdf")
 
         let newDocument = PDFDocument()
+        let pageCount = document.pageCount
 
-        for i in 0..<document.pageCount {
-            guard let page = document.page(at: i) else { continue }
+        for i in 0..<pageCount {
+            autoreleasepool {
+                guard let page = document.page(at: i) else { return }
 
-            let bounds = page.bounds(for: .mediaBox)
-            let renderer = UIGraphicsPDFRenderer(bounds: bounds)
+                let bounds = page.bounds(for: .mediaBox)
+                let renderer = UIGraphicsPDFRenderer(bounds: bounds)
 
-            let data = renderer.pdfData { context in
-                context.beginPage()
-                page.draw(with: .mediaBox, to: context.cgContext)
+                let data = renderer.pdfData { context in
+                    context.beginPage()
+                    page.draw(with: .mediaBox, to: context.cgContext)
 
-                if let drawingData = drawingsPerPage[i],
-                   let drawing = try? PKDrawing(data: drawingData) {
-                    let image = drawing.image(from: bounds, scale: 1.0)
-                    if let cgImage = image.cgImage {
-                        context.cgContext.draw(cgImage, in: bounds)
+                    if let drawingData = drawingsPerPage[i],
+                       let drawing = try? PKDrawing(data: drawingData) {
+                        let image = drawing.image(from: bounds, scale: 1.0)
+                        if let cgImage = image.cgImage {
+                            context.cgContext.draw(cgImage, in: bounds)
+                        }
                     }
                 }
-            }
 
-            if let newDoc = PDFDocument(data: data),
-               let newPage = newDoc.page(at: 0) {
-                newDocument.insert(newPage, at: i)
+                if let newDoc = PDFDocument(data: data),
+                   let newPage = newDoc.page(at: 0) {
+                    newDocument.insert(newPage, at: i)
+                }
             }
         }
 

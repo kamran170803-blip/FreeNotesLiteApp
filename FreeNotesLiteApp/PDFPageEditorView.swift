@@ -4,18 +4,34 @@ import PencilKit
 
 struct PDFPageEditorView: UIViewRepresentable {
     let url: URL
-    var pageIndex: Int
+    @Binding var currentPageIndex: Int
     @Binding var drawingPerPage: [Int: Data]
-    var tool: AnnotationTool
-    var colorHex: String
-    var lineWidth: CGFloat
+    var toolPicker: PKToolPicker?
+    var onCanvasCreated: (PKCanvasView) -> Void
 
     func makeUIView(context: Context) -> PDFAnnotationContainerView {
         let container = PDFAnnotationContainerView()
+        
         container.pdfView.document = PDFDocument(url: url)
+        container.pdfView.autoScales = true
+        container.pdfView.displayMode = .singlePage
+        container.pdfView.displayDirection = .horizontal
+        container.pdfView.usePageViewController(true, withViewOptions: nil)
+        container.pdfView.pageBreakMargins = UIEdgeInsets.zero
+        container.pdfView.backgroundColor = .secondarySystemBackground
+        container.pdfView.displaysPageBreaks = false
+        
         container.canvasView.delegate = context.coordinator
-        applyTool(to: container.canvasView)
         syncDrawing(on: container.canvasView)
+        onCanvasCreated(container.canvasView)
+        
+        NotificationCenter.default.addObserver(
+            context.coordinator,
+            selector: #selector(Coordinator.pageDidChange),
+            name: .PDFViewPageChanged,
+            object: container.pdfView
+        )
+        
         return container
     }
 
@@ -23,7 +39,11 @@ struct PDFPageEditorView: UIViewRepresentable {
         if uiView.pdfView.document?.documentURL != url {
             uiView.pdfView.document = PDFDocument(url: url)
         }
-        applyTool(to: uiView.canvasView)
+        
+        if let page = uiView.pdfView.document?.page(at: currentPageIndex) {
+            uiView.pdfView.go(to: page)
+        }
+        
         syncDrawing(on: uiView.canvasView)
     }
 
@@ -31,26 +51,13 @@ struct PDFPageEditorView: UIViewRepresentable {
         Coordinator(self)
     }
 
-    private func applyTool(to canvas: PKCanvasView) {
-        switch tool {
-        case .pen:
-            canvas.tool = PKInkingTool(.pen, color: UIColor(hex: colorHex), width: lineWidth)
-        case .marker:
-            canvas.tool = PKInkingTool(.marker, color: UIColor(hex: colorHex), width: lineWidth * 1.8)
-        case .eraser:
-            canvas.tool = PKEraserTool(.bitmap)
-        case .lasso:
-            canvas.tool = PKLassoTool()
-        }
-    }
-
     private func syncDrawing(on canvas: PKCanvasView) {
-        if let data = drawingPerPage[pageIndex],
+        if let data = drawingPerPage[currentPageIndex],
            let drawing = try? PKDrawing(data: data) {
             if canvas.drawing != drawing {
                 canvas.drawing = drawing
             }
-        } else if drawingPerPage[pageIndex] == nil, !canvas.drawing.strokes.isEmpty {
+        } else if drawingPerPage[currentPageIndex] == nil, !canvas.drawing.strokes.isEmpty {
             canvas.drawing = PKDrawing()
         }
     }
@@ -65,7 +72,18 @@ struct PDFPageEditorView: UIViewRepresentable {
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
             let newData = canvasView.drawing.dataRepresentation()
             Task { @MainActor in
-                self.parent.drawingPerPage[self.parent.pageIndex] = newData
+                self.parent.drawingPerPage[self.parent.currentPageIndex] = newData
+            }
+        }
+        
+        @objc func pageDidChange(_ notification: Notification) {
+            guard let pdfView = notification.object as? PDFView,
+                  let currentPage = pdfView.currentPage,
+                  let document = pdfView.document,
+                  let pageIndex = document.index(for: currentPage) else { return }
+            
+            Task { @MainActor in
+                self.parent.currentPageIndex = pageIndex
             }
         }
     }
@@ -88,9 +106,6 @@ final class PDFAnnotationContainerView: UIView {
         backgroundColor = .clear
 
         pdfView.translatesAutoresizingMaskIntoConstraints = false
-        pdfView.autoScales = true
-        pdfView.displayMode = .singlePageContinuous
-        pdfView.displayDirection = .vertical
         pdfView.backgroundColor = .secondarySystemBackground
 
         canvasView.translatesAutoresizingMaskIntoConstraints = false

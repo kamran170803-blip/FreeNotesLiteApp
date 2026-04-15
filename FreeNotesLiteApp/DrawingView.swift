@@ -3,9 +3,8 @@ import PencilKit
 
 struct DrawingView: UIViewRepresentable {
     @Binding var drawingData: Data?
-    var tool: AnnotationTool
-    var colorHex: String
-    var lineWidth: CGFloat
+    var toolPicker: PKToolPicker?
+    var onCanvasCreated: (PKCanvasView) -> Void
 
     func makeUIView(context: Context) -> PKCanvasView {
         let canvas = PKCanvasView()
@@ -14,31 +13,17 @@ struct DrawingView: UIViewRepresentable {
         canvas.drawingPolicy = .anyInput
         canvas.isScrollEnabled = false
         canvas.delegate = context.coordinator
-        applyTool(to: canvas)
         syncDrawing(on: canvas)
+        onCanvasCreated(canvas)
         return canvas
     }
 
     func updateUIView(_ uiView: PKCanvasView, context: Context) {
-        applyTool(to: uiView)
         syncDrawing(on: uiView)
     }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
-    }
-
-    private func applyTool(to canvas: PKCanvasView) {
-        switch tool {
-        case .pen:
-            canvas.tool = PKInkingTool(.pen, color: UIColor(hex: colorHex), width: lineWidth)
-        case .marker:
-            canvas.tool = PKInkingTool(.marker, color: UIColor(hex: colorHex), width: lineWidth * 1.8)
-        case .eraser:
-            canvas.tool = PKEraserTool(.bitmap)
-        case .lasso:
-            canvas.tool = PKLassoTool()
-        }
     }
 
     private func syncDrawing(on canvas: PKCanvasView) {

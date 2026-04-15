@@ -58,6 +58,16 @@ struct NotePage: Identifiable, Codable {
     var pdfFileName: String?
     var drawingData: Data? = nil
     var drawingPerPDFPage: [Int: Data] = [:]
+    var audioURL: URL?                     // local file URL for audio recording
+    var versionHistory: [PageVersion] = []  // saved snapshots
+}
+
+struct PageVersion: Identifiable, Codable {
+    var id = UUID()
+    var timestamp: Date
+    var drawingData: Data?
+    var drawingPerPDFPage: [Int: Data]
+    var thumbnailData: Data?   // optional preview
 }
 
 extension Color {
