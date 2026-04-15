@@ -8,19 +8,20 @@ import UIKit// <-- ADD THIS
 
 struct PageView: View {
     @EnvironmentObject var store: NotesStore
+    @Environment(\.displayScale) private var displayScale
     let folderID: UUID
     let notebookID: UUID
     
     enum PageBrowseMode: String, CaseIterable, Identifiable {
         case swipe = "Swipe"
         case scroll = "Scroll"
-
+        
         var id: String { rawValue }
     }
-
+    
     @State private var browseMode: PageBrowseMode = .swipe
     @State private var lastAutoAppendedPageID: UUID?
-
+    
     @State private var selectedPageID: UUID?
     @State private var currentPDFPageIndex: Int = 0
     @State private var pdfTotalPages: Int = 0
@@ -36,7 +37,7 @@ struct PageView: View {
     @State private var isRecording = false
     @State private var audioRecorder: AVAudioRecorder?
     @State private var audioPlayer: AVAudioPlayer?
-
+    
     @State private var toolPicker: PKToolPicker?
     @State private var canvasViewForToolPicker: PKCanvasView?
     @State private var selectedTool: AnnotationTool = .pen
@@ -46,7 +47,7 @@ struct PageView: View {
     private let toolPickerObserver = ToolPickerObserver()
     
     
-
+    
     var body: some View {
         if let notebook = store.notebook(folderID: folderID, notebookID: notebookID) {
             ZStack {
@@ -56,9 +57,9 @@ struct PageView: View {
                             .disabled(true)
                         Button(action: {}) { Image(systemName: "arrow.uturn.forward") }
                             .disabled(true)
-
+                        
                         Spacer()
-
+                        
                         Button {
                             toggleRecording()
                         } label: {
@@ -66,7 +67,7 @@ struct PageView: View {
                                 .font(.title2)
                                 .foregroundColor(isRecording ? .red : .primary)
                         }
-
+                        
                         Menu {
                             Section("Page Actions") {
                                 Button("Add Blank Page") { addPage(style: .blank) }
@@ -100,7 +101,7 @@ struct PageView: View {
                     .padding(.horizontal)
                     .padding(.vertical, 8)
                     .background(Color(.systemBackground))
-
+                    
                     if notebook.pages.isEmpty {
                         ContentUnavailableView("No Pages", systemImage: "doc")
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -111,7 +112,7 @@ struct PageView: View {
                             scrollBrowser(notebook: notebook)
                         }
                         
-                       
+                        
                         
                     }
                 }
@@ -124,7 +125,7 @@ struct PageView: View {
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
                 .padding(.bottom, 8)
-
+                
                 if notebook.pages.isEmpty {
                     VStack {
                         Spacer()
@@ -232,7 +233,7 @@ struct PageView: View {
             ContentUnavailableView("Notebook Not Found", systemImage: "book.closed")
         }
     }
-
+    
     @ViewBuilder
     private func bottomOverlay(notebook: Notebook) -> some View {
         if let pageID = selectedPageID,
@@ -267,7 +268,7 @@ struct PageView: View {
             thumbnailStrip(notebook: notebook)
         }
     }
-
+    
     private func setupToolPicker() {
         if toolPicker == nil {
             let picker = PKToolPicker()
@@ -276,7 +277,7 @@ struct PageView: View {
             toolPicker = picker
         }
     }
-
+    
     private func activateToolPicker(for canvas: PKCanvasView) {
         DispatchQueue.main.async {
             canvasViewForToolPicker = canvas
@@ -284,7 +285,7 @@ struct PageView: View {
             canvas.becomeFirstResponder()
         }
     }
-
+    
     private func toggleRecording() {
         if isRecording {
             stopRecording()
@@ -292,7 +293,7 @@ struct PageView: View {
             startRecording()
         }
     }
-
+    
     private func startRecording() {
         guard let pageID = selectedPageID else { return }
         let session = AVAudioSession.sharedInstance()
@@ -315,12 +316,12 @@ struct PageView: View {
             print("Recording failed: \(error)")
         }
     }
-
+    
     private func stopRecording() {
         audioRecorder?.stop()
         isRecording = false
     }
-
+    
     private func updatePDFPageCount(for page: NotePage) {
         guard let pdfName = page.pdfFileName else { return }
         let url = DataManager.shared.pdfURL(for: pdfName)
@@ -334,7 +335,7 @@ struct PageView: View {
             }
         }
     }
-
+    
     private func handleScannedImages(_ images: [UIImage]) {
         guard let pdfData = createPDF(from: images) else { return }
         if let fileName = DataManager.shared.saveScannedPDF(data: pdfData) {
@@ -348,7 +349,7 @@ struct PageView: View {
             }
         }
     }
-
+    
     private func createPDF(from images: [UIImage]) -> Data? {
         let pdfRenderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792))
         let data = pdfRenderer.pdfData { context in
@@ -360,7 +361,7 @@ struct PageView: View {
         }
         return data
     }
-
+    
     private func addPage(style: PageStyle) {
         store.addPage(folderID: folderID, notebookID: notebookID, style: style)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -370,7 +371,7 @@ struct PageView: View {
             }
         }
     }
-
+    
     private func duplicatePage(pageID: UUID) {
         store.duplicatePage(folderID: folderID, notebookID: notebookID, pageID: pageID)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -380,47 +381,51 @@ struct PageView: View {
             }
         }
     }
-
+    
     private func deletePage(pageID: UUID) {
         store.deletePage(folderID: folderID, notebookID: notebookID, pageID: pageID)
         if let notebook = store.notebook(folderID: folderID, notebookID: notebookID) {
             selectedPageID = notebook.pages.first?.id
         }
     }
-
+    
     private func saveVersion(pageID: UUID) {
         store.saveVersion(folderID: folderID, notebookID: notebookID, pageID: pageID)
     }
-
+    
     func exportPDF() {
         guard let pageID = selectedPageID,
-              let page = store.page(folderID: folderID, notebookID: notebookID, pageID: pageID) else {
-            exportAlertMessage = "No page selected."
-            showingExportAlert = true
+              let page = store.page(folderID: folderID,
+                                    notebookID: notebookID,
+                                    pageID: pageID) else {
             return
         }
-        guard let pdfName = page.pdfFileName else {
-            exportAlertMessage = "This page is not a PDF. Only imported PDFs can be exported with annotations."
-            showingExportAlert = true
-            return
-        }
-        let url = DataManager.shared.pdfURL(for: pdfName)
-        DispatchQueue.global(qos: .userInitiated).async {
-            let outputURL = DataManager.shared.exportAnnotatedPDF(
-                originalURL: url,
-                drawingsPerPage: page.drawingPerPDFPage
-            )
-            DispatchQueue.main.async {
-                if let outputURL = outputURL {
-                    sharePDF(url: outputURL)
-                } else {
-                    exportAlertMessage = "Failed to create annotated PDF."
-                    showingExportAlert = true
+        
+        if let pdfName = page.pdfFileName {
+            
+            let url = DataManager.shared.pdfURL(for: pdfName)
+            
+            DispatchQueue.global(qos: .userInitiated).async {
+                let outputURL = DataManager.shared.exportAnnotatedPDF(
+                    originalURL: url,
+                    drawingsPerPage: page.drawingPerPDFPage
+                )
+                
+                DispatchQueue.main.async {
+                    if let outputURL = outputURL {
+                        sharePDF(url: outputURL)
+                    } else {
+                        exportAlertMessage = "Failed to create annotated PDF."
+                        showingExportAlert = true
+                    }
                 }
             }
+            
+        } else {
+            exportNotePageAsPDF(page)
         }
     }
-
+    
     func sharePDF(url: URL) {
         let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -433,7 +438,7 @@ struct PageView: View {
             root.present(activityVC, animated: true)
         }
     }
-
+    
     @ViewBuilder
     private func thumbnailStrip(notebook: Notebook) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -457,7 +462,7 @@ struct PageView: View {
         .padding(.horizontal)
         .padding(.bottom, 8)
     }
-
+    
     @ViewBuilder
     private func thumbnailView(for page: NotePage) -> some View {
         ZStack {
@@ -468,7 +473,7 @@ struct PageView: View {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(selectedPageID == page.id ? Color.blue : Color.gray.opacity(0.5), lineWidth: 2)
                 )
-
+            
             if let pdfName = page.pdfFileName {
                 AsyncPDFThumbnail(url: DataManager.shared.pdfURL(for: pdfName), pageIndex: 0, size: CGSize(width: 60, height: 80))
             } else {
@@ -512,7 +517,7 @@ struct PageView: View {
             bottomOverlay(notebook: notebook)
         }
     }
-
+    
     @ViewBuilder
     private func scrollBrowser(notebook: Notebook) -> some View {
         ScrollView {
@@ -558,53 +563,34 @@ struct PageView: View {
     }
     
     
-
-        if let pdfName = page.pdfFileName {
-            let url = DataManager.shared.pdfURL(for: pdfName)
-            DispatchQueue.global(qos: .userInitiated).async {
-                let outputURL = DataManager.shared.exportAnnotatedPDF(
-                    originalURL: url,
-                    drawingsPerPage: page.drawingPerPDFPage
-                )
-                DispatchQueue.main.async {
-                    if let outputURL = outputURL {
-                        sharePDF(url: outputURL)
-                    } else {
-                        exportAlertMessage = "Failed to create annotated PDF."
-                        showingExportAlert = true
-                    }
-                }
-            }
-        } else {
-            exportNotePageAsPDF(page)
-        }
-    }
+    
+    
     
     private func exportNotePageAsPDF(_ page: NotePage) {
         let pageSize = CGSize(width: 612, height: 792)
         let bounds = CGRect(origin: .zero, size: pageSize)
         let renderer = UIGraphicsPDFRenderer(bounds: bounds)
-
+        
         let outputURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(UUID().uuidString)_note.pdf")
-
+        
         let data = renderer.pdfData { context in
             context.beginPage()
-
+            
             if let templateImage = renderTemplateImage(for: page, size: pageSize) {
                 templateImage.draw(in: bounds)
             } else {
                 UIColor(hex: page.pageColorHex).setFill()
                 context.cgContext.fill(bounds)
             }
-
+            
             if let drawingData = page.drawing,
                let drawing = try? PKDrawing(data: drawingData) {
                 let image = drawing.image(from: bounds, scale: 1.0)
                 image.draw(in: bounds)
             }
         }
-
+        
         do {
             try data.write(to: outputURL, options: [.atomic])
             sharePDF(url: outputURL)
@@ -613,18 +599,44 @@ struct PageView: View {
             showingExportAlert = true
         }
     }
-
+    
     private func renderTemplateImage(for page: NotePage, size: CGSize) -> UIImage? {
         let template = ZStack {
             Color(hex: page.pageColorHex)
             PageLines(style: page.style)
         }
-        .frame(width: size.width, height: size.height)
-
+            .frame(width: size.width, height: size.height)
+        
         let renderer = ImageRenderer(content: template)
-        renderer.scale = UIScreen.main.scale
+        renderer.scale = displayScale
         return renderer.uiImage
+        
+        
+        
     }
-
-    final class ToolPickerObserver: NSObject, PKToolPickerObserver {}
+    
+    
+    final class ToolPickerObserver: NSObject, PKToolPickerObserver {
+        
+        weak var toolPicker: PKToolPicker?
+        
+        func attach(to picker: PKToolPicker) {
+            self.toolPicker = picker
+            picker.addObserver(self)
+        }
+        
+        func detach() {
+            toolPicker?.removeObserver(self)
+            toolPicker = nil
+        }
+        
+        // Called when user changes tool
+        func toolPickerSelectedToolDidChange(_ toolPicker: PKToolPicker) {
+            print("Tool changed")
+        }
+        
+        func toolPickerVisibilityDidChange(_ toolPicker: PKToolPicker) {
+            print("Visibility changed")
+        }
+    }
 }

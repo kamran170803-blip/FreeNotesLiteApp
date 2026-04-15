@@ -44,50 +44,9 @@ struct PageContentView: View {
     var body: some View {
         ZStack {
             if let pdfName = page.pdfFileName {
-                PDFPageEditorView(
-                    url: DataManager.shared.pdfURL(for: pdfName),
-                    currentPageIndex: $currentPDFPageIndex,
-                    drawingPerPage: pdfDrawingBinding(pageID: page.id),
-                    toolPicker: toolPicker,
-                    onCanvasCreated: onCanvasCreated
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .shadow(radius: 8)
-                .padding(8)
+                pdfContent(pdfName: pdfName)
             } else {
-                ZStack {
-                    Color(hex: page.pageColorHex)
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-
-                    PageLines(style: page.style)
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        .allowsHitTesting(false)
-
-                    Vstack {
-                        noteToolbar
-                        Spacer()
-                    }
-                    .padding(10)
-                    
-                    DrawingView(
-                        drawing: drawingBinding(pageID: page.id),
-                        tool: selectedTool,
-                        color: selectedColor,
-                        width: strokeWidth,
-                        onNearBottom: isLastNotebookPage ? appendNextBlankPage : nil
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .padding(10)
-                            
-                         tool: selectedTool,
-                        color: selectedColor,
-                        width: strokeWidth
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .padding(10)
-                }
-                .shadow(radius: 8)
-                .padding(8)
+                noteContent
             }
         }
         .sheet(isPresented: $showingCustomColorPicker) {
@@ -102,6 +61,76 @@ struct PageContentView: View {
                 }
             )
         }
+    }
+
+    @ViewBuilder
+    private func pdfContent(pdfName: String) -> some View {
+        PDFPageEditorView(
+            url: DataManager.shared.pdfURL(for: pdfName),
+            currentPageIndex: $currentPDFPageIndex,
+            drawingPerPage: pdfDrawingBinding(pageID: page.id),
+            toolPicker: toolPicker,
+            onCanvasCreated: onCanvasCreated
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .shadow(radius: 8)
+        .padding(8)
+    }
+
+    private var noteContent: some View {
+        ZStack {
+            noteBackground
+            noteToolbarOverlay
+            noteDrawingLayer
+        }
+        .shadow(radius: 8)
+        .padding(8)
+    }
+
+    private var noteBackground: some View {
+        ZStack {
+            Color(hex: page.pageColorHex)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+            PageLines(style: page.style)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .allowsHitTesting(false)
+        }
+    }
+
+    private var noteToolbarOverlay: some View {
+        VStack {
+            noteToolbar
+            Spacer()
+        }
+        .padding(10)
+    }
+
+    private var noteDrawingLayer: AnyView {
+        if isLastNotebookPage {
+            return AnyView(
+                DrawingView(
+                    drawing: drawingBinding(pageID: page.id),
+                    tool: selectedTool,
+                    color: selectedColor,
+                    width: strokeWidth,
+                    onNearBottom: { appendNextBlankPage() }
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .padding(10)
+            )
+        }
+
+        return AnyView(
+            DrawingView(
+                drawing: drawingBinding(pageID: page.id),
+                tool: selectedTool,
+                color: selectedColor,
+                width: strokeWidth
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .padding(10)
+        )
     }
 
     private func pdfDrawingBinding(pageID: UUID) -> Binding<[Int: Data]> {
