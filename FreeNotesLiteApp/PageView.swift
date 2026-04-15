@@ -43,6 +43,8 @@ struct PageView: View {
     @State private var selectedTool: AnnotationTool = .pen
     @State private var selectedColor: UIColor = .black
     @State private var strokeWidth: CGFloat = 5
+    @Binding var notebook: Notebook
+    
     
     private let toolPickerObserver = ToolPickerObserver()
     
@@ -53,10 +55,19 @@ struct PageView: View {
             ZStack {
                 VStack(spacing: 0) {
                     HStack {
-                        Button(action: {}) { Image(systemName: "arrow.uturn.backward") }
-                            .disabled(true)
-                        Button(action: {}) { Image(systemName: "arrow.uturn.forward") }
-                            .disabled(true)
+                        Button {
+                            canvasViewForToolPicker?.undoManager?.undo()
+                        } label: {
+                            Image(systemName: "arrow.uturn.backward")
+                        }
+                        .disabled(!(canvasViewForToolPicker?.undoManager?.canUndo ?? false))
+
+                        Button {
+                            canvasViewForToolPicker?.undoManager?.redo()
+                        } label: {
+                            Image(systemName: "arrow.uturn.forward")
+                        }
+                        .disabled(!(canvasViewForToolPicker?.undoManager?.canRedo ?? false))
                         
                         Spacer()
                         
@@ -151,11 +162,38 @@ struct PageView: View {
             .navigationTitle(notebook.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink {
-                        CompareSplitView(folderID: folderID, notebookID: notebookID)
+                ToolbarItemGroup {
+                    
+                    // UNDO
+                    Button {
+                        canvasViewForToolPicker?.undoManager?.undo()
                     } label: {
-                        Image(systemName: "square.split.2x1")
+                        Image(systemName: "arrow.uturn.backward")
+                    }
+                    .disabled(!(canvasViewForToolPicker?.undoManager?.canUndo ?? false))
+                    
+                    // REDO
+                    Button {
+                        canvasViewForToolPicker?.undoManager?.redo()
+                    } label: {
+                        Image(systemName: "arrow.uturn.forward")
+                    }
+                    .disabled(!(canvasViewForToolPicker?.undoManager?.canRedo ?? false))
+                    
+                    Divider()
+                    
+                    // ADD PAGE
+                    Button {
+                        addNewPage()
+                    } label: {
+                        Image(systemName: "plus.square")
+                    }
+                    
+                    // IMPORT PDF (optional future)
+                    Button {
+                        importPDF()
+                    } label: {
+                        Image(systemName: "doc")
                     }
                 }
             }
@@ -638,5 +676,21 @@ struct PageView: View {
         func toolPickerVisibilityDidChange(_ toolPicker: PKToolPicker) {
             print("Visibility changed")
         }
+    }
+    // MARK: - Actions
+
+   
+    func addNewPage() {
+        let newPage = NotePage(
+            id: UUID(),
+            style: .blank,
+            pageColorHex: "#FFFFFF")
+        notebook.pages.append(newPage)
+        selectedPageID = newPage.id
+    }
+
+    func importPDF() {
+        // For now (basic version)
+        print("PDF import coming soon")
     }
 }

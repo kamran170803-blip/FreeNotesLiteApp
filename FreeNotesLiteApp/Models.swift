@@ -70,6 +70,7 @@ struct PageVersion: Identifiable, Codable {
     var thumbnailData: Data?   // optional preview
 }
 
+
 extension Color {
     init(hex: String) {
         let cleaned = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
@@ -81,3 +82,4 @@ extension Color {
         self.init(.sRGB, red: r, green: g, blue: b, opacity: 1)
     }
 }
+

@@ -8,6 +8,7 @@ struct DrawingView: UIViewRepresentable {
     var color: UIColor
     var width: CGFloat
     var onNearBottom: (() -> Void)? = nil
+    var onCanvasCreated: ((PKCanvasView) -> Void)? = nil
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -28,6 +29,7 @@ struct DrawingView: UIViewRepresentable {
         }
 
         applyTool(to: canvas)
+        onCanvasCreated?(canvas)
         return canvas
     }
 
@@ -45,17 +47,10 @@ struct DrawingView: UIViewRepresentable {
         switch tool {
         case .pen:
             canvas.tool = PKInkingTool(.pen, color: color, width: width)
-
         case .marker:
-            canvas.tool = PKInkingTool(
-                .marker,
-                color: color.withAlphaComponent(0.4),
-                width: width * 1.8
-            )
-
+            canvas.tool = PKInkingTool(.marker, color: color.withAlphaComponent(0.4), width: width * 1.8)
         case .eraser:
             canvas.tool = PKEraserTool(.vector)
-
         case .lasso:
             canvas.tool = PKLassoTool()
         }
@@ -73,7 +68,6 @@ struct DrawingView: UIViewRepresentable {
             parent.drawing = canvasView.drawing.dataRepresentation()
 
             guard let onNearBottom = parent.onNearBottom else { return }
-
             let bounds = canvasView.drawing.bounds
             let nearBottom = bounds.maxY > (canvasView.bounds.height - 140)
 

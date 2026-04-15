@@ -25,12 +25,14 @@ struct NotebookListView: View {
                             spacing: 16
                         ) {
                             ForEach(folder.notebooks) { notebook in
-                                NavigationLink {
-                                    PageView(folderID: folderID, notebookID: notebook.id)
-                                } label: {
-                                    NotebookCardView(notebook: notebook)
+                                if let notebookBinding = notebookBinding(for: notebook.id) {
+                                    NavigationLink {
+                                        PageView(folderID: folder.id, notebookID: notebook.id, notebook: notebookBinding)
+                                    } label: {
+                                        NotebookCardView(notebook: notebook)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
                     }
@@ -65,6 +67,18 @@ struct NotebookListView: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.bottom, 8)
+    }
+
+    private func notebookBinding(for notebookID: UUID) -> Binding<Notebook>? {
+        guard let folderIndex = store.folders.firstIndex(where: { $0.id == folderID }),
+              let notebookIndex = store.folders[folderIndex].notebooks.firstIndex(where: { $0.id == notebookID }) else {
+            return nil
+        }
+
+        return Binding(
+            get: { store.folders[folderIndex].notebooks[notebookIndex] },
+            set: { store.folders[folderIndex].notebooks[notebookIndex] = $0 }
+        )
     }
 }
 

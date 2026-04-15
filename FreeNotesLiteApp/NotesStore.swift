@@ -90,12 +90,17 @@ final class NotesStore: ObservableObject {
         // Placeholder.
     }
 
-    func updatePage(folderID: UUID, notebookID: UUID, pageID: UUID, mutate: (inout NotePage) -> Void) {
-        guard let folderIndex = folders.firstIndex(where: { $0.id == folderID }),
-              let notebookIndex = folders[folderIndex].notebooks.firstIndex(where: { $0.id == notebookID }),
-              let pageIndex = folders[folderIndex].notebooks[notebookIndex].pages.firstIndex(where: { $0.id == pageID }) else { return }
+    func updatePage(folderID: UUID, notebookID: UUID, pageID: UUID, mutate: @escaping (inout NotePage) -> Void) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            guard let folderIndex = self.folders.firstIndex(where: { $0.id == folderID }),
+                  let notebookIndex = self.folders[folderIndex].notebooks.firstIndex(where: { $0.id == notebookID }),
+                  let pageIndex = self.folders[folderIndex].notebooks[notebookIndex].pages.firstIndex(where: { $0.id == pageID }) else { return }
 
-        mutate(&folders[folderIndex].notebooks[notebookIndex].pages[pageIndex])
+            var updatedFolders = self.folders
+            mutate(&updatedFolders[folderIndex].notebooks[notebookIndex].pages[pageIndex])
+            self.folders = updatedFolders
+        }
     }
 
     func setPageStyle(folderID: UUID, notebookID: UUID, pageID: UUID, style: PageStyle) {
