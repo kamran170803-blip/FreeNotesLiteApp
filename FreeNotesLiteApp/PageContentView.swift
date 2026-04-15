@@ -5,7 +5,10 @@ import PDFKit   // <-- ADD THIS
 struct PageContentView: View {
     @State private var selectedTool: AnnotationTool = .pen
     @State private var selectedColor: UIColor = .black
-    @State private var strokewidth: CGFloat = 5
+    @State private var strokeWidth: CGFloat = 5
+    
+
+    
     @EnvironmentObject var store: NotesStore
     let folderID: UUID
     let notebookID: UUID
@@ -13,7 +16,7 @@ struct PageContentView: View {
     let toolPicker: PKToolPicker?
     let onCanvasCreated: (PKCanvasView) -> Void
     @Binding var currentPDFPageIndex: Int
-
+    
     init(
         folderID: UUID,
         notebookID: UUID,
@@ -53,7 +56,7 @@ struct PageContentView: View {
                         .allowsHitTesting(false)
 
                     DrawingView(
-                        drawingData: Binding(
+                        drawing: Binding(
                             get: {
                                 page.drawingPerPDFPage[currentPDFPageIndex]
                             },
@@ -67,6 +70,7 @@ struct PageContentView: View {
                                 }
                             }
                         ),
+                            
                         tool: selectedTool,
                         color: selectedColor,
                         width: strokeWidth
@@ -96,11 +100,11 @@ struct PageContentView: View {
     private func drawingBinding(pageID: UUID) -> Binding<Data?> {
         Binding(
             get: {
-                store.page(folderID: folderID, notebookID: notebookID, pageID: pageID)?.drawingData
+                store.page(folderID: folderID, notebookID: notebookID, pageID: pageID)?.drawing
             },
             set: { newValue in
                 store.updatePage(folderID: folderID, notebookID: notebookID, pageID: pageID) {
-                    $0.drawingData = newValue
+                    $0.drawing = newValue
                 }
             }
         )

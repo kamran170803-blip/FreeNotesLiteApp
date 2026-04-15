@@ -44,7 +44,7 @@ final class NotesStore: ObservableObject {
         var notebook = Notebook(title: title)
         notebook.cover = cover
         notebook.template = template
-        let defaultPage = NotePage(style: template, pageColorHex: "FFFDF7", pdfFileName: nil, drawingData: nil)
+        let defaultPage = NotePage(style: template, pageColorHex: "FFFDF7", pdfFileName: nil, drawing: nil)
         notebook.pages.append(defaultPage)
         folders[folderIndex].notebooks.append(notebook)
     }
@@ -57,7 +57,7 @@ final class NotesStore: ObservableObject {
             style: style,
             pageColorHex: pageColorHex,
             pdfFileName: pdfFileName,
-            drawingData: nil
+            drawing: nil
         )
         folders[folderIndex].notebooks[notebookIndex].pages.append(page)
     }
@@ -107,7 +107,7 @@ final class NotesStore: ObservableObject {
     }
 
     func setPageDrawing(folderID: UUID, notebookID: UUID, pageID: UUID, data: Data?) {
-        updatePage(folderID: folderID, notebookID: notebookID, pageID: pageID) { $0.drawingData = data }
+        updatePage(folderID: folderID, notebookID: notebookID, pageID: pageID) { $0.drawing = data }
     }
 
     func setPDFDrawing(folderID: UUID, notebookID: UUID, pageID: UUID, pageIndex: Int, data: Data?) {
@@ -122,7 +122,7 @@ final class NotesStore: ObservableObject {
         guard let page = page(folderID: folderID, notebookID: notebookID, pageID: pageID) else { return }
         let version = PageVersion(
             timestamp: Date(),
-            drawingData: page.drawingData,
+            drawing: page.drawing,
             drawingPerPDFPage: page.drawingPerPDFPage,
             thumbnailData: nil // can generate later
         )
@@ -135,7 +135,7 @@ final class NotesStore: ObservableObject {
         guard let page = page(folderID: folderID, notebookID: notebookID, pageID: pageID),
               let version = page.versionHistory.first(where: { $0.id == versionID }) else { return }
         updatePage(folderID: folderID, notebookID: notebookID, pageID: pageID) {
-            $0.drawingData = version.drawingData
+            $0.drawing = version.drawing
             $0.drawingPerPDFPage = version.drawingPerPDFPage
         }
     }

@@ -16,7 +16,7 @@ struct DrawingView: UIViewRepresentable {
     func makeUIView(context: Context) -> PKCanvasView {
         let canvas = PKCanvasView()
 
-        if let data = drawingData,
+        if let data = drawing,
            let drawing = try? PKDrawing(data: data) {
             canvas.drawing = drawing
         }
@@ -35,7 +35,7 @@ struct DrawingView: UIViewRepresentable {
     }
 
     func updateUIView(_ canvas: PKCanvasView, context: Context) {
-        if let data = drawingData,
+        if let data = drawing,
            let newDrawing = try? PKDrawing(data: data),
            canvas.drawing != newDrawing {
             canvas.drawing = newDrawing
@@ -73,7 +73,7 @@ struct DrawingView: UIViewRepresentable {
         }
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-            parent.drawingData = canvasView.drawing.dataRepresentation()
+            parent.drawing = canvasView.drawing.dataRepresentation()
         }
     }
 }

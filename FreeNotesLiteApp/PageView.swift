@@ -30,7 +30,7 @@ struct PageView: View {
     @State private var canvasViewForToolPicker: PKCanvasView?
     @State private var selectedTool: AnnotationTool = .pen
     @State private var selectedColor: UIColor = .black
-    @State private var strokewidth: CGFloat = 5
+    @State private var strokeWidth: CGFloat = 5
     
     private let toolPickerObserver = ToolPickerObserver()
 
