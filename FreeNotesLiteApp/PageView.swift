@@ -3,12 +3,23 @@ import UniformTypeIdentifiers
 import PencilKit
 import VisionKit
 import AVFoundation
-import PDFKit   // <-- ADD THIS
+import PDFKit
+import UIKit// <-- ADD THIS
 
 struct PageView: View {
     @EnvironmentObject var store: NotesStore
     let folderID: UUID
     let notebookID: UUID
+    
+    enum PageBrowseMode: String, CaseIterable, Identifiable {
+        case swipe = "Swipe"
+        case scroll = "Scroll"
+
+        var id: String { rawValue }
+    }
+
+    @State private var browseMode: PageBrowseMode = .swipe
+    @State private var lastAutoAppendedPageID: UUID?
 
     @State private var selectedPageID: UUID?
     @State private var currentPDFPageIndex: Int = 0
@@ -33,6 +44,8 @@ struct PageView: View {
     @State private var strokeWidth: CGFloat = 5
     
     private let toolPickerObserver = ToolPickerObserver()
+    
+    
 
     var body: some View {
         if let notebook = store.notebook(folderID: folderID, notebookID: notebookID) {
@@ -92,41 +105,25 @@ struct PageView: View {
                         ContentUnavailableView("No Pages", systemImage: "doc")
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
-                        TabView(selection: $selectedPageID) {
-                            ForEach(notebook.pages) { page in
-                                PageContentView(
-                                    folderID: folderID,
-                                    notebookID: notebookID,
-                                    page: page,
-                                    toolPicker: toolPicker,
-                                    onCanvasCreated: { canvas in
-                                        DispatchQueue.main.async {
-                                            activateToolPicker(for: canvas)
-                                        }
-                                    },
-                                    currentPDFPageIndex: $currentPDFPageIndex
-                                )
-                                .tag(Optional(page.id))
-                                .padding()
-                            }
+                        if browseMode == .swipe {
+                            swipeBrowser(notebook: notebook)
+                        } else {
+                            scrollBrowser(notebook: notebook)
                         }
-                        .tabViewStyle(.page(indexDisplayMode: .never))
-                        .overlay(alignment: .bottom) {
-                            bottomOverlay(notebook: notebook)
-                        }
-                        .onChange(of: selectedPageID) { oldID, newID in
-                            if let newID,
-                               let page = store.page(folderID: folderID, notebookID: notebookID, pageID: newID) {
-                                if page.pdfFileName != nil {
-                                    currentPDFPageIndex = 0
-                                    updatePDFPageCount(for: page)
-                                } else {
-                                    pdfTotalPages = 0
-                                }
-                            }
-                        }
+                        
+                       
+                        
                     }
                 }
+                
+                Picker("View Mode", selection: $browseMode) {
+                    ForEach(PageBrowseMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.bottom, 8)
 
                 if notebook.pages.isEmpty {
                     VStack {
@@ -489,6 +486,144 @@ struct PageView: View {
                     .offset(x: 20, y: -25)
             }
         }
+    }
+    @ViewBuilder
+    private func swipeBrowser(notebook: Notebook) -> some View {
+        TabView(selection: $selectedPageID) {
+            ForEach(notebook.pages) { page in
+                PageContentView(
+                    folderID: folderID,
+                    notebookID: notebookID,
+                    page: page,
+                    toolPicker: toolPicker,
+                    onCanvasCreated: { canvas in
+                        DispatchQueue.main.async {
+                            activateToolPicker(for: canvas)
+                        }
+                    },
+                    currentPDFPageIndex: $currentPDFPageIndex
+                )
+                .tag(Optional(page.id))
+                .padding()
+            }
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .overlay(alignment: .bottom) {
+            bottomOverlay(notebook: notebook)
+        }
+    }
+
+    @ViewBuilder
+    private func scrollBrowser(notebook: Notebook) -> some View {
+        ScrollView {
+            LazyVStack(spacing: 18) {
+                ForEach(notebook.pages) { page in
+                    PageContentView(
+                        folderID: folderID,
+                        notebookID: notebookID,
+                        page: page,
+                        toolPicker: toolPicker,
+                        onCanvasCreated: { canvas in
+                            DispatchQueue.main.async {
+                                activateToolPicker(for: canvas)
+                            }
+                        },
+                        currentPDFPageIndex: $currentPDFPageIndex
+                    )
+                    .padding(.horizontal)
+                    .frame(minHeight: 820)
+                    .onTapGesture {
+                        selectedPageID = page.id
+                    }
+                    .onAppear {
+                        if page.id == notebook.pages.last?.id,
+                           page.pdfFileName == nil,
+                           lastAutoAppendedPageID != page.id {
+                            lastAutoAppendedPageID = page.id
+                            store.addPage(
+                                folderID: folderID,
+                                notebookID: notebookID,
+                                style: page.style,
+                                pageColorHex: page.pageColorHex
+                            )
+                        }
+                    }
+                }
+            }
+            .padding(.vertical)
+        }
+        .overlay(alignment: .bottom) {
+            bottomOverlay(notebook: notebook)
+        }
+    }
+    
+    
+
+        if let pdfName = page.pdfFileName {
+            let url = DataManager.shared.pdfURL(for: pdfName)
+            DispatchQueue.global(qos: .userInitiated).async {
+                let outputURL = DataManager.shared.exportAnnotatedPDF(
+                    originalURL: url,
+                    drawingsPerPage: page.drawingPerPDFPage
+                )
+                DispatchQueue.main.async {
+                    if let outputURL = outputURL {
+                        sharePDF(url: outputURL)
+                    } else {
+                        exportAlertMessage = "Failed to create annotated PDF."
+                        showingExportAlert = true
+                    }
+                }
+            }
+        } else {
+            exportNotePageAsPDF(page)
+        }
+    }
+    
+    private func exportNotePageAsPDF(_ page: NotePage) {
+        let pageSize = CGSize(width: 612, height: 792)
+        let bounds = CGRect(origin: .zero, size: pageSize)
+        let renderer = UIGraphicsPDFRenderer(bounds: bounds)
+
+        let outputURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("\(UUID().uuidString)_note.pdf")
+
+        let data = renderer.pdfData { context in
+            context.beginPage()
+
+            if let templateImage = renderTemplateImage(for: page, size: pageSize) {
+                templateImage.draw(in: bounds)
+            } else {
+                UIColor(hex: page.pageColorHex).setFill()
+                context.cgContext.fill(bounds)
+            }
+
+            if let drawingData = page.drawing,
+               let drawing = try? PKDrawing(data: drawingData) {
+                let image = drawing.image(from: bounds, scale: 1.0)
+                image.draw(in: bounds)
+            }
+        }
+
+        do {
+            try data.write(to: outputURL, options: [.atomic])
+            sharePDF(url: outputURL)
+        } catch {
+            exportAlertMessage = "Failed to export note as PDF."
+            showingExportAlert = true
+        }
+    }
+
+    private func renderTemplateImage(for page: NotePage, size: CGSize) -> UIImage? {
+        let template = ZStack {
+            Color(hex: page.pageColorHex)
+            PageLines(style: page.style)
+        }
+        .frame(width: size.width, height: size.height)
+
+        let renderer = ImageRenderer(content: template)
+        renderer.scale = UIScreen.main.scale
+        return renderer.uiImage
     }
 
     final class ToolPickerObserver: NSObject, PKToolPickerObserver {}
