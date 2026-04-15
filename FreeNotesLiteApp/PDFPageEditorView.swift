@@ -11,27 +11,27 @@ struct PDFPageEditorView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> PDFAnnotationContainerView {
         let container = PDFAnnotationContainerView()
-        
+
         container.pdfView.document = PDFDocument(url: url)
         container.pdfView.autoScales = true
         container.pdfView.displayMode = .singlePage
         container.pdfView.displayDirection = .horizontal
         container.pdfView.usePageViewController(true, withViewOptions: nil)
-        container.pdfView.pageBreakMargins = UIEdgeInsets.zero
+        container.pdfView.pageBreakMargins = .zero
         container.pdfView.backgroundColor = .secondarySystemBackground
         container.pdfView.displaysPageBreaks = false
-        
+
         container.canvasView.delegate = context.coordinator
         syncDrawing(on: container.canvasView)
         onCanvasCreated(container.canvasView)
-        
+
         NotificationCenter.default.addObserver(
             context.coordinator,
-            selector: #selector(Coordinator.pageDidChange),
+            selector: #selector(Coordinator.pageDidChange(_:)),
             name: .PDFViewPageChanged,
             object: container.pdfView
         )
-        
+
         return container
     }
 
@@ -39,11 +39,11 @@ struct PDFPageEditorView: UIViewRepresentable {
         if uiView.pdfView.document?.documentURL != url {
             uiView.pdfView.document = PDFDocument(url: url)
         }
-        
+
         if let page = uiView.pdfView.document?.page(at: currentPageIndex) {
             uiView.pdfView.go(to: page)
         }
-        
+
         syncDrawing(on: uiView.canvasView)
     }
 
@@ -69,19 +69,25 @@ struct PDFPageEditorView: UIViewRepresentable {
             self.parent = parent
         }
 
+        deinit {
+            NotificationCenter.default.removeObserver(self)
+        }
+
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
             let newData = canvasView.drawing.dataRepresentation()
             Task { @MainActor in
                 self.parent.drawingPerPage[self.parent.currentPageIndex] = newData
             }
         }
-        
+
         @objc func pageDidChange(_ notification: Notification) {
             guard let pdfView = notification.object as? PDFView,
                   let currentPage = pdfView.currentPage,
-                  let document = pdfView.document,
-                  let pageIndex = document.index(for: currentPage) else { return }
-            
+                  let document = pdfView.document else { return }
+
+            let pageIndex = document.index(for: currentPage)
+            guard pageIndex >= 0, pageIndex < document.pageCount else { return }
+
             Task { @MainActor in
                 self.parent.currentPageIndex = pageIndex
             }

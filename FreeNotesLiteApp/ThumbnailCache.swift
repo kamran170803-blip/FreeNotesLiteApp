@@ -10,24 +10,24 @@ class ThumbnailCache {
     }
     
     func thumbnail(for url: URL, pageIndex: Int, size: CGSize, completion: @escaping (UIImage?) -> Void) {
-        let key = NSURL(fileURLWithPath: "\(url.absoluteString)#\(pageIndex)")
-        
+        let key = NSURL(fileURLWithPath: "\(url.absoluteString)-\(pageIndex)")
+
         if let cachedImage = cache.object(forKey: key) {
             completion(cachedImage)
             return
         }
-        
+
         DispatchQueue.global(qos: .userInitiated).async {
             guard let document = PDFDocument(url: url),
                   let page = document.page(at: pageIndex) else {
                 DispatchQueue.main.async { completion(nil) }
                 return
             }
-            
+
             let thumbnailImage = page.thumbnail(of: size, for: .mediaBox)
-            if let thumb = thumbnailImage {
-                self.cache.setObject(thumb, forKey: key)
-            }
+
+            self.cache.setObject(thumbnailImage, forKey: key)
+
             DispatchQueue.main.async {
                 completion(thumbnailImage)
             }
