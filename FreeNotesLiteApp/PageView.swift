@@ -28,6 +28,10 @@ struct PageView: View {
 
     @State private var toolPicker: PKToolPicker?
     @State private var canvasViewForToolPicker: PKCanvasView?
+    @State private var selectedTool: AnnotationTool = .pen
+    @State private var selectedColor: UIColor = .black
+    @State private var strokewidth: CGFloat = 5
+    
     private let toolPickerObserver = ToolPickerObserver()
 
     var body: some View {
@@ -96,7 +100,9 @@ struct PageView: View {
                                     page: page,
                                     toolPicker: toolPicker,
                                     onCanvasCreated: { canvas in
-                                        activateToolPicker(for: canvas)
+                                        DispatchQueue.main.async {
+                                            activateToolPicker(for: canvas)
+                                        }
                                     },
                                     currentPDFPageIndex: $currentPDFPageIndex
                                 )

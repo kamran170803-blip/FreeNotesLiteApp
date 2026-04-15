@@ -2,42 +2,70 @@ import SwiftUI
 import PencilKit
 
 struct DrawingView: UIViewRepresentable {
-    @Binding var drawingData: Data?
-    var toolPicker: PKToolPicker?
-    var onCanvasCreated: (PKCanvasView) -> Void
 
-    func makeUIView(context: Context) -> PKCanvasView {
-        let canvas = PKCanvasView()
-        canvas.backgroundColor = .clear
-        canvas.isOpaque = false
-        canvas.drawingPolicy = .anyInput
-        canvas.isScrollEnabled = false
-        canvas.delegate = context.coordinator
-        syncDrawing(on: canvas)
-        onCanvasCreated(canvas)
-        return canvas
-    }
+    @Binding var drawing: Data?
 
-    func updateUIView(_ uiView: PKCanvasView, context: Context) {
-        syncDrawing(on: uiView)
-    }
+    var tool: AnnotationTool
+    var color: UIColor
+    var width: CGFloat
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
 
-    private func syncDrawing(on canvas: PKCanvasView) {
-        if let drawingData,
-           let drawing = try? PKDrawing(data: drawingData) {
-            if canvas.drawing != drawing {
-                canvas.drawing = drawing
-            }
-        } else if drawingData == nil, !canvas.drawing.strokes.isEmpty {
-            canvas.drawing = PKDrawing()
+    func makeUIView(context: Context) -> PKCanvasView {
+        let canvas = PKCanvasView()
+
+        if let data = drawingData,
+           let drawing = try? PKDrawing(data: data) {
+            canvas.drawing = drawing
+        }
+        canvas.delegate = context.coordinator
+        canvas.backgroundColor = .clear
+        canvas.isOpaque = false
+        canvas.drawingPolicy = .anyInput
+
+        canvas.minimumZoomScale = 1
+        canvas.maximumZoomScale = 4
+        canvas.bouncesZoom = true
+
+        applyTool(to: canvas)
+
+        return canvas
+    }
+
+    func updateUIView(_ canvas: PKCanvasView, context: Context) {
+        if let data = drawingData,
+           let newDrawing = try? PKDrawing(data: data),
+           canvas.drawing != newDrawing {
+            canvas.drawing = newDrawing
+        }
+        applyTool(to: canvas)
+    }
+
+    // 🔧 TOOL LOGIC (FIXED)
+    func applyTool(to canvas: PKCanvasView) {
+        switch tool {
+        case .pen:
+            canvas.tool = PKInkingTool(.pen, color: color, width: width)
+
+        case .marker:
+            canvas.tool = PKInkingTool(
+                .marker,
+                color: color.withAlphaComponent(0.4),
+                width: width * 1.8
+            )
+
+        case .eraser:
+            canvas.tool = PKEraserTool(.vector)
+
+        case .lasso:
+            canvas.tool = PKLassoTool()
         }
     }
 
-    final class Coordinator: NSObject, PKCanvasViewDelegate {
+    // 🔄 COORDINATOR (sync drawing)
+    class Coordinator: NSObject, PKCanvasViewDelegate {
         var parent: DrawingView
 
         init(_ parent: DrawingView) {
@@ -45,10 +73,7 @@ struct DrawingView: UIViewRepresentable {
         }
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-            let newData = canvasView.drawing.dataRepresentation()
-            Task { @MainActor in
-                self.parent.drawingData = newData
-            }
+            parent.drawingData = canvasView.drawing.dataRepresentation()
         }
     }
 }
