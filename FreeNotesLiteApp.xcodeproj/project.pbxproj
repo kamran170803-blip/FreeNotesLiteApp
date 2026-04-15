@@ -7,37 +7,13 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		AD42CED42F8E88F700EA44E4 /* NoteFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NoteFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD42CED42F8E88F700EA44E4 /* FreeNotesLiteApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FreeNotesLiteApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		AD42CEFD2F8E956200EA44E4 /* Exceptions for "NoteFlow" folder in "NoteFlow" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				.swift,
-			);
-			target = AD42CED32F8E88F700EA44E4 /* NoteFlow */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		AD42CEFE2F8E956200EA44E4 /* Exceptions for "NoteFlow" folder in "Compile Sources" phase from "NoteFlow" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = AD42CED02F8E88F700EA44E4 /* Sources */;
-			membershipExceptions = (
-				.swift,
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		AD42CED62F8E88F700EA44E4 /* NoteFlow */ = {
+		AD42CED62F8E88F700EA44E4 /* FreeNotesLiteApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				AD42CEFD2F8E956200EA44E4 /* Exceptions for "NoteFlow" folder in "NoteFlow" target */,
-				AD42CEFE2F8E956200EA44E4 /* Exceptions for "NoteFlow" folder in "Compile Sources" phase from "NoteFlow" target */,
-			);
-			path = NoteFlow;
+			path = FreeNotesLiteApp;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -56,7 +32,7 @@
 		AD42CECB2F8E88F700EA44E4 = {
 			isa = PBXGroup;
 			children = (
-				AD42CED62F8E88F700EA44E4 /* NoteFlow */,
+				AD42CED62F8E88F700EA44E4 /* FreeNotesLiteApp */,
 				AD42CED52F8E88F700EA44E4 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -64,7 +40,7 @@
 		AD42CED52F8E88F700EA44E4 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				AD42CED42F8E88F700EA44E4 /* NoteFlow.app */,
+				AD42CED42F8E88F700EA44E4 /* FreeNotesLiteApp.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -72,9 +48,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		AD42CED32F8E88F700EA44E4 /* NoteFlow */ = {
+		AD42CED32F8E88F700EA44E4 /* FreeNotesLiteApp */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AD42CEDF2F8E88F800EA44E4 /* Build configuration list for PBXNativeTarget "NoteFlow" */;
+			buildConfigurationList = AD42CEDF2F8E88F800EA44E4 /* Build configuration list for PBXNativeTarget "FreeNotesLiteApp" */;
 			buildPhases = (
 				AD42CED02F8E88F700EA44E4 /* Sources */,
 				AD42CED12F8E88F700EA44E4 /* Frameworks */,
@@ -85,13 +61,13 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				AD42CED62F8E88F700EA44E4 /* NoteFlow */,
+				AD42CED62F8E88F700EA44E4 /* FreeNotesLiteApp */,
 			);
-			name = NoteFlow;
+			name = FreeNotesLiteApp;
 			packageProductDependencies = (
 			);
 			productName = SwiftFlow;
-			productReference = AD42CED42F8E88F700EA44E4 /* NoteFlow.app */;
+			productReference = AD42CED42F8E88F700EA44E4 /* FreeNotesLiteApp.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -109,7 +85,7 @@
 					};
 				};
 			};
-			buildConfigurationList = AD42CECF2F8E88F700EA44E4 /* Build configuration list for PBXProject "NoteFlow" */;
+			buildConfigurationList = AD42CECF2F8E88F700EA44E4 /* Build configuration list for PBXProject "FreeNotesLiteApp" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -123,7 +99,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AD42CED32F8E88F700EA44E4 /* NoteFlow */,
+				AD42CED32F8E88F700EA44E4 /* FreeNotesLiteApp */,
 			);
 		};
 /* End PBXProject section */
@@ -333,7 +309,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		AD42CECF2F8E88F700EA44E4 /* Build configuration list for PBXProject "NoteFlow" */ = {
+		AD42CECF2F8E88F700EA44E4 /* Build configuration list for PBXProject "FreeNotesLiteApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AD42CEDD2F8E88F800EA44E4 /* Debug */,
@@ -342,7 +318,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AD42CEDF2F8E88F800EA44E4 /* Build configuration list for PBXNativeTarget "NoteFlow" */ = {
+		AD42CEDF2F8E88F800EA44E4 /* Build configuration list for PBXNativeTarget "FreeNotesLiteApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AD42CEE02F8E88F800EA44E4 /* Debug */,
