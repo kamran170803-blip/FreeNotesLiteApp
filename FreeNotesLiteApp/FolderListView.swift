@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct FolderListView: View {
     @EnvironmentObject var store: NotesStore
@@ -54,7 +55,12 @@ struct FolderListView: View {
                 }
             }
             .onAppear {
-                if selectedFolderID == nil {
+                if selectedFolderID == nil || !store.folders.contains(where: { $0.id == selectedFolderID }) {
+                    selectedFolderID = store.folders.first?.id
+                }
+            }
+            .onReceive(store.$folders) { _ in
+                if selectedFolderID == nil || !store.folders.contains(where: { $0.id == selectedFolderID }) {
                     selectedFolderID = store.folders.first?.id
                 }
             }

@@ -8,8 +8,9 @@ struct FreeNotesLiteApp: App {
         WindowGroup {
             NavigationStack {
                 FolderListView()
+                
+                    .environmentObject(store)
             }
-                .environmentObject(store)
         }
     }
 }

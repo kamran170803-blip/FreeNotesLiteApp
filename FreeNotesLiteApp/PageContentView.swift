@@ -104,7 +104,6 @@ struct PageLines: View {
             switch style {
             case .blank:
                 break
-
             case .ruled:
                 let spacing: CGFloat = 30
                 for y in stride(from: spacing, through: size.height, by: spacing) {
@@ -113,7 +112,6 @@ struct PageLines: View {
                     path.addLine(to: CGPoint(x: size.width, y: y))
                     context.stroke(path, with: .color(lineColor), lineWidth: 1)
                 }
-
             case .doubleRuled:
                 let groupSpacing: CGFloat = 34
                 let pairGap: CGFloat = 8
@@ -128,7 +126,6 @@ struct PageLines: View {
                     path2.addLine(to: CGPoint(x: size.width, y: y + pairGap))
                     context.stroke(path2, with: .color(lineColor.opacity(0.75)), lineWidth: 1)
                 }
-
             case .grid:
                 let spacing: CGFloat = 28
                 for x in stride(from: spacing, through: size.width, by: spacing) {

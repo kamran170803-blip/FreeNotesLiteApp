@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct PageView: View {
-    @EnvironmentObject var store: NotesStore
+    @EnvironmentObject var store: NotesStore   // ✅ THIS WAS MISSING
     let folderID: UUID
     let notebookID: UUID
 
@@ -15,6 +15,8 @@ struct PageView: View {
     @State private var showingPageSettings = false
     @State private var importErrorMessage = ""
     @State private var showImportError = false
+    @State private var showingExportAlert = false
+    @State private var exportAlertMessage = ""
 
     private let quickColors: [(String, String)] = [
         ("Black", "111111"), ("Blue", "2563EB"), ("Red", "DC2626"),
@@ -27,7 +29,6 @@ struct PageView: View {
                 VStack(spacing: 0) {
                     // Top Toolbar
                     HStack {
-                        // Undo/Redo (disabled for now)
                         Button(action: {}) { Image(systemName: "arrow.uturn.backward") }
                             .disabled(true)
                         Button(action: {}) { Image(systemName: "arrow.uturn.forward") }
@@ -35,7 +36,6 @@ struct PageView: View {
 
                         Divider().frame(height: 20)
 
-                        // Tool picker
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
                                 ForEach(AnnotationTool.allCases) { tool in
@@ -54,7 +54,6 @@ struct PageView: View {
 
                         Divider().frame(height: 20)
 
-                        // Color picker
                         HStack(spacing: 4) {
                             ForEach(quickColors, id: \.1) { _, hex in
                                 Circle()
@@ -70,7 +69,6 @@ struct PageView: View {
 
                         Spacer()
 
-                        // Menu for page settings and export
                         Menu {
                             Button("Add Blank Page") { addPage(style: .blank) }
                             Button("Add Ruled Page") { addPage(style: .ruled) }
@@ -88,7 +86,6 @@ struct PageView: View {
                     .padding(.vertical, 8)
                     .background(Color(.systemBackground))
 
-                    // Page content area
                     if notebook.pages.isEmpty {
                         ContentUnavailableView("No Pages", systemImage: "doc")
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -116,7 +113,6 @@ struct PageView: View {
                     }
                 }
 
-                // Floating add button for empty state
                 if notebook.pages.isEmpty {
                     VStack {
                         Spacer()
@@ -173,7 +169,12 @@ struct PageView: View {
                 case .success(let url):
                     if let fileName = DataManager.shared.importPDF(from: url) {
                         store.addPage(folderID: folderID, notebookID: notebookID, style: .blank, pdfFileName: fileName)
-                        selectedPageID = store.notebook(folderID: folderID, notebookID: notebookID)?.pages.last?.id
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            if let notebook = store.notebook(folderID: folderID, notebookID: notebookID),
+                               let lastPage = notebook.pages.last {
+                                selectedPageID = lastPage.id
+                            }
+                        }
                     } else {
                         importErrorMessage = "Could not import PDF."
                         showImportError = true
@@ -188,12 +189,16 @@ struct PageView: View {
             } message: {
                 Text(importErrorMessage)
             }
+            .alert("Export", isPresented: $showingExportAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(exportAlertMessage)
+            }
         } else {
             ContentUnavailableView("Notebook Not Found", systemImage: "book.closed")
         }
     }
 
-    // MARK: - Thumbnail Strip
     @ViewBuilder
     private func thumbnailStrip(notebook: Notebook) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -237,33 +242,46 @@ struct PageView: View {
         }
     }
 
-    // MARK: - Page Management
     private func addPage(style: PageStyle) {
         store.addPage(folderID: folderID, notebookID: notebookID, style: style)
-        // Force refresh of notebook and selected page
-        if let notebook = store.notebook(folderID: folderID, notebookID: notebookID),
-           let lastPage = notebook.pages.last {
-            selectedPageID = lastPage.id
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            if let notebook = store.notebook(folderID: folderID, notebookID: notebookID),
+               let lastPage = notebook.pages.last {
+                selectedPageID = lastPage.id
+            }
         }
     }
+
     private func clearCurrentPage() {
         guard let pageID = selectedPageID else { return }
         store.setPageDrawing(folderID: folderID, notebookID: notebookID, pageID: pageID, data: nil)
     }
 
-    // MARK: - PDF Export
     func exportPDF() {
         guard let pageID = selectedPageID,
-              let page = store.page(folderID: folderID, notebookID: notebookID, pageID: pageID),
-              let pdfName = page.pdfFileName else { return }
+              let page = store.page(folderID: folderID, notebookID: notebookID, pageID: pageID) else {
+            exportAlertMessage = "No page selected."
+            showingExportAlert = true
+            return
+        }
+
+        guard let pdfName = page.pdfFileName else {
+            exportAlertMessage = "This page is not a PDF. Only imported PDFs can be exported with annotations."
+            showingExportAlert = true
+            return
+        }
 
         let url = DataManager.shared.pdfURL(for: pdfName)
-        if let outputURL = DataManager.shared.exportAnnotatedPDF(
+        guard let outputURL = DataManager.shared.exportAnnotatedPDF(
             originalURL: url,
             drawingsPerPage: page.drawingPerPDFPage
-        ) {
-            sharePDF(url: outputURL)
+        ) else {
+            exportAlertMessage = "Failed to create annotated PDF."
+            showingExportAlert = true
+            return
         }
+
+        sharePDF(url: outputURL)
     }
 
     func sharePDF(url: URL) {

@@ -13,6 +13,7 @@ struct CompareSplitView: View {
             }
             .padding()
             .navigationTitle("Split View")
+            .navigationBarTitleDisplayMode(.inline)
         } else {
             ContentUnavailableView("Notebook Not Found", systemImage: "square.split.2x1")
         }
@@ -25,7 +26,15 @@ struct CompareSplitView: View {
                 .fill(Color(.secondarySystemBackground))
 
             if let page {
-                PageContentView(folderID: folderID, notebookID: notebookID, page: page)
+                PageContentView(
+                    folderID: folderID,
+                    notebookID: notebookID,
+                    page: page,
+                    selectedTool: .pen,          // explicitly pass defaults
+                    selectedColorHex: "111111",
+                    lineWidth: 4,
+                    pdfPageIndex: 0
+                )
             } else {
                 VStack(spacing: 12) {
                     Image(systemName: "square.dashed")

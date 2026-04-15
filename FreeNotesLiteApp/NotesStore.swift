@@ -12,6 +12,11 @@ final class NotesStore: ObservableObject {
 
     init() {
         self.folders = DataManager.shared.loadFolders()
+        if folders.isEmpty {
+            // Create a default folder so the user can start immediately
+            let defaultFolder = NoteFolder(name: "My Notebooks")
+            folders.append(defaultFolder)
+        }
     }
 
     func folder(id: UUID) -> NoteFolder? {
@@ -20,14 +25,6 @@ final class NotesStore: ObservableObject {
 
     func notebook(folderID: UUID, notebookID: UUID) -> Notebook? {
         folder(id: folderID)?.notebooks.first { $0.id == notebookID }
-    }
-    
-    func addNotebook(folderID: UUID, title: String = "New Notebook", cover: NotebookCover = .none, template: PageStyle = .blank) {
-        guard let folderIndex = folders.firstIndex(where: { $0.id == folderID }) else { return }
-        var notebook = Notebook(title: title)
-        notebook.cover = cover
-        notebook.template = template
-        folders[folderIndex].notebooks.append(notebook)
     }
 
     func page(folderID: UUID, notebookID: UUID, pageID: UUID) -> NotePage? {
@@ -43,18 +40,35 @@ final class NotesStore: ObservableObject {
         folders[folderIndex].notebooks.append(Notebook(title: title))
     }
 
+    func addNotebook(folderID: UUID, title: String, cover: NotebookCover, template: PageStyle) {
+        guard let folderIndex = folders.firstIndex(where: { $0.id == folderID }) else { return }
+        var notebook = Notebook(title: title)
+        notebook.cover = cover
+        notebook.template = template
+        // Add a default blank page so new notebooks aren't empty
+        let defaultPage = NotePage(style: template, pageColorHex: "FFFDF7", pdfFileName: nil, drawingData: nil)
+        notebook.pages.append(defaultPage)
+        folders[folderIndex].notebooks.append(notebook)
+    }
+
     func addPage(folderID: UUID, notebookID: UUID, style: PageStyle = .blank, pageColorHex: String = "FFFDF7", pdfFileName: String? = nil) {
-        guard let folderIndex = folders.firstIndex(where: { $0.id == folderID }),
-              let notebookIndex = folders[folderIndex].notebooks.firstIndex(where: { $0.id == notebookID }) else { return }
+        guard let folderIndex = folders.firstIndex(where: { $0.id == folderID }) else {
+            print("❌ Folder not found for ID: \(folderID)")
+            return
+        }
+        guard let notebookIndex = folders[folderIndex].notebooks.firstIndex(where: { $0.id == notebookID }) else {
+            print("❌ Notebook not found for ID: \(notebookID)")
+            return
+        }
 
         let page = NotePage(
             style: style,
             pageColorHex: pageColorHex,
             pdfFileName: pdfFileName,
             drawingData: nil
-            
         )
         folders[folderIndex].notebooks[notebookIndex].pages.append(page)
+        print("✅ Page added. Total pages: \(folders[folderIndex].notebooks[notebookIndex].pages.count)")
     }
 
     func addPage(folderID: UUID, notebookID: UUID) {
@@ -80,16 +94,10 @@ final class NotesStore: ObservableObject {
     func setPageDrawing(folderID: UUID, notebookID: UUID, pageID: UUID, data: Data?) {
         updatePage(folderID: folderID, notebookID: notebookID, pageID: pageID) { $0.drawingData = data }
     }
-    func setPDFDrawing(
-        folderID: UUID,
-        notebookID: UUID,
-        pageID: UUID,
-        pageIndex: Int,
-        data: Data?
-    ) {
+
+    func setPDFDrawing(folderID: UUID, notebookID: UUID, pageID: UUID, pageIndex: Int, data: Data?) {
         updatePage(folderID: folderID, notebookID: notebookID, pageID: pageID) {
             $0.drawingPerPDFPage[pageIndex] = data
         }
     }
 }
-

@@ -46,8 +46,8 @@ struct NoteFolder: Identifiable, Codable {
 struct Notebook: Identifiable, Codable {
     var id = UUID()
     var title: String
-    var cover: NotebookCover = .none       // NEW
-    var template: PageStyle = .blank       // NEW
+    var cover: NotebookCover = .none
+    var template: PageStyle = .blank
     var pages: [NotePage] = []
 }
 

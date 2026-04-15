@@ -44,7 +44,7 @@ struct DrawingView: UIViewRepresentable {
     private func syncDrawing(on canvas: PKCanvasView) {
         if let drawingData,
            let drawing = try? PKDrawing(data: drawingData) {
-            if canvas.drawing.dataRepresentation() != drawingData {
+            if canvas.drawing != drawing {
                 canvas.drawing = drawing
             }
         } else if drawingData == nil, !canvas.drawing.strokes.isEmpty {

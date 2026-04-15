@@ -47,7 +47,7 @@ struct PDFPageEditorView: UIViewRepresentable {
     private func syncDrawing(on canvas: PKCanvasView) {
         if let data = drawingPerPage[pageIndex],
            let drawing = try? PKDrawing(data: data) {
-            if canvas.drawing.dataRepresentation() != data {
+            if canvas.drawing != drawing {
                 canvas.drawing = drawing
             }
         } else if drawingPerPage[pageIndex] == nil, !canvas.drawing.strokes.isEmpty {
@@ -71,7 +71,6 @@ struct PDFPageEditorView: UIViewRepresentable {
     }
 }
 
-// PDFAnnotationContainerView remains unchanged
 final class PDFAnnotationContainerView: UIView {
     let pdfView = PDFView()
     let canvasView = PKCanvasView()
