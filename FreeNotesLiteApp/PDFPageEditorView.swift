@@ -39,16 +39,18 @@ struct PDFPageEditorView: UIViewRepresentable {
             canvas.tool = PKInkingTool(.marker, color: UIColor(hex: colorHex), width: lineWidth * 1.8)
         case .eraser:
             canvas.tool = PKEraserTool(.bitmap)
+        case .lasso:
+            canvas.tool = PKLassoTool()
         }
     }
 
     private func syncDrawing(on canvas: PKCanvasView) {
-        if let data = drawingPerPage[pageIndex]
+        if let data = drawingPerPage[pageIndex],
            let drawing = try? PKDrawing(data: data) {
-            if canvas.drawing.dataRepresentation() != drawingData {
+            if canvas.drawing.dataRepresentation() != data {
                 canvas.drawing = drawing
             }
-        } else if drawingData == nil, !canvas.drawing.strokes.isEmpty {
+        } else if drawingPerPage[pageIndex] == nil, !canvas.drawing.strokes.isEmpty {
             canvas.drawing = PKDrawing()
         }
     }
@@ -61,14 +63,15 @@ struct PDFPageEditorView: UIViewRepresentable {
         }
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-            let data = canvasView.drawing.dataRepresentation()
+            let newData = canvasView.drawing.dataRepresentation()
             Task { @MainActor in
-                self.parent.drawingPerPage[self.parent.pageIndex] = data
+                self.parent.drawingPerPage[self.parent.pageIndex] = newData
             }
         }
     }
 }
 
+// PDFAnnotationContainerView remains unchanged
 final class PDFAnnotationContainerView: UIView {
     let pdfView = PDFView()
     let canvasView = PKCanvasView()

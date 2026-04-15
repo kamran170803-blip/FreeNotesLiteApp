@@ -2,19 +2,37 @@ import SwiftUI
 import Foundation
 
 enum PageStyle: String, Codable, CaseIterable, Identifiable {
-    case blank
-    case ruled
-    case doubleRuled
-    case grid
-
+    case blank, ruled, doubleRuled, grid
     var id: String { rawValue }
-
     var title: String {
         switch self {
         case .blank: return "Blank"
         case .ruled: return "Ruled"
         case .doubleRuled: return "Double Ruled"
         case .grid: return "Grid"
+        }
+    }
+}
+
+enum NotebookCover: String, Codable, CaseIterable, Identifiable {
+    case none, leather, fabric, geometric, abstract
+    var id: String { rawValue }
+    var imageName: String {
+        switch self {
+        case .none: return "book.closed.fill"
+        case .leather: return "book.fill"
+        case .fabric: return "book.circle.fill"
+        case .geometric: return "triangle.fill"
+        case .abstract: return "circle.hexagongrid.fill"
+        }
+    }
+    var displayName: String {
+        switch self {
+        case .none: return "No Cover"
+        case .leather: return "Leather"
+        case .fabric: return "Fabric"
+        case .geometric: return "Geometric"
+        case .abstract: return "Abstract"
         }
     }
 }
@@ -28,16 +46,16 @@ struct NoteFolder: Identifiable, Codable {
 struct Notebook: Identifiable, Codable {
     var id = UUID()
     var title: String
+    var cover: NotebookCover = .none       // NEW
+    var template: PageStyle = .blank       // NEW
     var pages: [NotePage] = []
 }
 
 struct NotePage: Identifiable, Codable {
-    let id: UUID = UUID()
+    var id = UUID()
     var style: PageStyle
     var pageColorHex: String
     var pdfFileName: String?
-
-    // NEW SYSTEM
     var drawingData: Data? = nil
     var drawingPerPDFPage: [Int: Data] = [:]
 }
@@ -47,19 +65,9 @@ extension Color {
         let cleaned = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var rgb: UInt64 = 0
         Scanner(string: cleaned).scanHexInt64(&rgb)
-
-        let r, g, b: Double
-        switch cleaned.count {
-        case 6:
-            r = Double((rgb >> 16) & 0xFF) / 255.0
-            g = Double((rgb >> 8) & 0xFF) / 255.0
-            b = Double(rgb & 0xFF) / 255.0
-        default:
-            r = 1
-            g = 1
-            b = 1
-        }
-
+        let r = Double((rgb >> 16) & 0xFF) / 255.0
+        let g = Double((rgb >> 8) & 0xFF) / 255.0
+        let b = Double(rgb & 0xFF) / 255.0
         self.init(.sRGB, red: r, green: g, blue: b, opacity: 1)
     }
 }

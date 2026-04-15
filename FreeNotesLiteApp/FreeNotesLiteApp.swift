@@ -6,7 +6,9 @@ struct FreeNotesLiteApp: App {
 
     var body: some Scene {
         WindowGroup {
-            FolderListView()
+            NavigationStack {
+                FolderListView()
+            }
                 .environmentObject(store)
         }
     }

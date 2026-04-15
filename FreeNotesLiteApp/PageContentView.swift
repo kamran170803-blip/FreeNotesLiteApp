@@ -8,6 +8,7 @@ struct PageContentView: View {
     let selectedTool: AnnotationTool
     let selectedColorHex: String
     let lineWidth: CGFloat
+    let pdfPageIndex: Int
 
     init(
         folderID: UUID,
@@ -15,7 +16,8 @@ struct PageContentView: View {
         page: NotePage,
         selectedTool: AnnotationTool = .pen,
         selectedColorHex: String = "111111",
-        lineWidth: CGFloat = 4
+        lineWidth: CGFloat = 4,
+        pdfPageIndex: Int = 0
     ) {
         self.folderID = folderID
         self.notebookID = notebookID
@@ -23,6 +25,7 @@ struct PageContentView: View {
         self.selectedTool = selectedTool
         self.selectedColorHex = selectedColorHex
         self.lineWidth = lineWidth
+        self.pdfPageIndex = pdfPageIndex
     }
 
     var body: some View {
@@ -30,23 +33,12 @@ struct PageContentView: View {
             if let pdfName = page.pdfFileName {
                 PDFPageEditorView(
                     url: DataManager.shared.pdfURL(for: pdfName),
-                    drawingPerPage: pdfDrawingBinding(pageID: page.id), pageIndex: 0,
+                    pageIndex: pdfPageIndex,
+                    drawingPerPage: pdfDrawingBinding(pageID: page.id),
                     tool: selectedTool,
                     colorHex: selectedColorHex,
                     lineWidth: lineWidth
                 )
-                private func pdfDrawingBinding(pageID: UUID) -> Binding<[Int: Data]> {
-                    Binding(
-                        get: {
-                            store.page(folderID: folderID, notebookID: notebookID, pageID: pageID)?.drawingPerPDFPage ?? [:]
-                        },
-                        set: { newValue in
-                            store.updatePage(folderID: folderID, notebookID: notebookID, pageID: pageID) {
-                                $0.drawingPerPDFPage = newValue
-                            }
-                        }
-                    )
-                }
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .shadow(radius: 8)
                 .padding(8)
@@ -74,13 +66,28 @@ struct PageContentView: View {
         }
     }
 
+    private func pdfDrawingBinding(pageID: UUID) -> Binding<[Int: Data]> {
+        Binding(
+            get: {
+                store.page(folderID: folderID, notebookID: notebookID, pageID: pageID)?.drawingPerPDFPage ?? [:]
+            },
+            set: { newValue in
+                store.updatePage(folderID: folderID, notebookID: notebookID, pageID: pageID) {
+                    $0.drawingPerPDFPage = newValue
+                }
+            }
+        )
+    }
+
     private func drawingBinding(pageID: UUID) -> Binding<Data?> {
         Binding(
             get: {
                 store.page(folderID: folderID, notebookID: notebookID, pageID: pageID)?.drawingData
             },
             set: { newValue in
-                store.updatePage(folderID: folderID, notebookID: notebookID, pageID: pageID) {$0.drawingPerPDFPage = newValue}
+                store.updatePage(folderID: folderID, notebookID: notebookID, pageID: pageID) {
+                    $0.drawingData = newValue
+                }
             }
         )
     }

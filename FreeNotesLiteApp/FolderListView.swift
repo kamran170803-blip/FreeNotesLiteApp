@@ -12,8 +12,14 @@ struct FolderListView: View {
                 Section {
                     ForEach(store.folders) { folder in
                         Label {
-                            Text(folder.name)
-                                .font(.headline)
+                            HStack {
+                                Text(folder.name)
+                                    .font(.headline)
+                                Spacer()
+                                Text("\(folder.notebooks.count)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         } icon: {
                             Image(systemName: "folder.fill")
                                 .foregroundStyle(.blue)
@@ -25,13 +31,15 @@ struct FolderListView: View {
                 }
             }
             .listStyle(.sidebar)
-            .navigationTitle("FreeNotes Lite")
+            .navigationTitle("FreeNotes")
             .toolbar {
-                Button {
-                    folderName = ""
-                    showingAddFolder = true
-                } label: {
-                    Label("Add Folder", systemImage: "folder.badge.plus")
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        folderName = ""
+                        showingAddFolder = true
+                    } label: {
+                        Label("Add Folder", systemImage: "folder.badge.plus")
+                    }
                 }
             }
             .sheet(isPresented: $showingAddFolder) {
@@ -39,9 +47,9 @@ struct FolderListView: View {
                     title: "New Folder",
                     placeholder: "Folder name",
                     primaryButtonTitle: "Create",
-                    onCancel: {}
+                    onCancel: { }
                 ) { name in
-                    store.folders.append(NoteFolder(name: name))
+                    store.addFolder(name: name)
                     selectedFolderID = store.folders.last?.id
                 }
             }

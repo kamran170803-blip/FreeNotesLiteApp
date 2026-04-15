@@ -74,7 +74,8 @@ final class DataManager {
         pdfFolderURL.appendingPathComponent(fileName)
     }
 
-    func exportAnnotatedPDF(originalURL: URL, drawingData: Data?) -> URL? {
+    // FIXED: Accepts dictionary of per‑page drawings
+    func exportAnnotatedPDF(originalURL: URL, drawingsPerPage: [Int: Data]) -> URL? {
         guard let document = PDFDocument(url: originalURL) else { return nil }
 
         let outputURL = FileManager.default
@@ -91,10 +92,9 @@ final class DataManager {
 
             let data = renderer.pdfData { context in
                 context.beginPage()
-
                 page.draw(with: .mediaBox, to: context.cgContext)
 
-                if let drawingData,
+                if let drawingData = drawingsPerPage[i],
                    let drawing = try? PKDrawing(data: drawingData) {
                     let image = drawing.image(from: bounds, scale: 1.0)
                     if let cgImage = image.cgImage {

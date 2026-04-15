@@ -21,6 +21,14 @@ final class NotesStore: ObservableObject {
     func notebook(folderID: UUID, notebookID: UUID) -> Notebook? {
         folder(id: folderID)?.notebooks.first { $0.id == notebookID }
     }
+    
+    func addNotebook(folderID: UUID, title: String = "New Notebook", cover: NotebookCover = .none, template: PageStyle = .blank) {
+        guard let folderIndex = folders.firstIndex(where: { $0.id == folderID }) else { return }
+        var notebook = Notebook(title: title)
+        notebook.cover = cover
+        notebook.template = template
+        folders[folderIndex].notebooks.append(notebook)
+    }
 
     func page(folderID: UUID, notebookID: UUID, pageID: UUID) -> NotePage? {
         notebook(folderID: folderID, notebookID: notebookID)?.pages.first { $0.id == pageID }
@@ -42,8 +50,9 @@ final class NotesStore: ObservableObject {
         let page = NotePage(
             style: style,
             pageColorHex: pageColorHex,
-            drawingData: nil,
-            pdfFileName: pdfFileName
+            pdfFileName: pdfFileName,
+            drawingData: nil
+            
         )
         folders[folderIndex].notebooks[notebookIndex].pages.append(page)
     }
@@ -83,3 +92,4 @@ final class NotesStore: ObservableObject {
         }
     }
 }
+

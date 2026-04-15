@@ -36,6 +36,8 @@ struct DrawingView: UIViewRepresentable {
             canvas.tool = PKInkingTool(.marker, color: UIColor(hex: colorHex), width: lineWidth * 1.8)
         case .eraser:
             canvas.tool = PKEraserTool(.bitmap)
+        case .lasso:
+            canvas.tool = PKLassoTool()
         }
     }
 
@@ -58,9 +60,9 @@ struct DrawingView: UIViewRepresentable {
         }
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-            let data = canvasView.drawing.dataRepresentation()
+            let newData = canvasView.drawing.dataRepresentation()
             Task { @MainActor in
-                self.parent.drawingData = data
+                self.parent.drawingData = newData
             }
         }
     }

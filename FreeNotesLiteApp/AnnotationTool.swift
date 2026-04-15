@@ -6,6 +6,7 @@ enum AnnotationTool: String, CaseIterable, Identifiable {
     case pen
     case marker
     case eraser
+    case lasso
 
     var id: String { rawValue }
 
@@ -14,6 +15,7 @@ enum AnnotationTool: String, CaseIterable, Identifiable {
         case .pen: return "Pen"
         case .marker: return "Marker"
         case .eraser: return "Eraser"
+        case .lasso: return "Lasso"
         }
     }
 
@@ -22,6 +24,7 @@ enum AnnotationTool: String, CaseIterable, Identifiable {
         case .pen: return "pencil.tip"
         case .marker: return "highlighter"
         case .eraser: return "eraser"
+        case .lasso: return "lasso"
         }
     }
 }

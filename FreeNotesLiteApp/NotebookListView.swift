@@ -21,9 +21,7 @@ struct NotebookListView: View {
                         .frame(maxWidth: .infinity, minHeight: 280)
                     } else {
                         LazyVGrid(
-                            columns: [
-                                GridItem(.adaptive(minimum: 220), spacing: 16)
-                            ],
+                            columns: [GridItem(.adaptive(minimum: 160), spacing: 16)],
                             spacing: 16
                         ) {
                             ForEach(folder.notebooks) { notebook in
@@ -41,23 +39,17 @@ struct NotebookListView: View {
             }
             .navigationTitle(folder.name)
             .toolbar {
-                Button {
-                    showingAddNotebook = true
-                } label: {
-                    Label("Add Notebook", systemImage: "plus")
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showingAddNotebook = true
+                    } label: {
+                        Label("Add Notebook", systemImage: "plus")
+                    }
                 }
             }
             .sheet(isPresented: $showingAddNotebook) {
-                TextInputSheet(
-                    title: "New Notebook",
-                    placeholder: "Notebook title",
-                    primaryButtonTitle: "Create",
-                    onCancel: {}
-                ) { name in
-                    store.addNotebook(folderID: folderID)
-                    if let folderIndex = store.folders.firstIndex(where: { $0.id == folderID }) {
-                        store.folders[folderIndex].notebooks[store.folders[folderIndex].notebooks.count - 1].title = name
-                    }
+                NotebookCreationSheet { title, cover, template in
+                    store.addNotebook(folderID: folderID, title: title, cover: cover, template: template)
                 }
             }
         } else {
@@ -66,86 +58,64 @@ struct NotebookListView: View {
     }
 
     private func header(folder: NoteFolder) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Your Notebooks")
-                .font(.title.weight(.bold))
-
+                .font(.largeTitle.weight(.bold))
             Text("\(folder.notebooks.count) notebook(s)")
                 .foregroundStyle(.secondary)
-
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.blue.opacity(0.20),
-                            Color.purple.opacity(0.14),
-                            Color.orange.opacity(0.10)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(height: 120)
-                .overlay(alignment: .leading) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Premium workspace")
-                            .font(.headline)
-                        Text("Folders, notebooks, pages, PDF import, Pencil notes, and split view.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding()
-                }
         }
+        .padding(.bottom, 8)
     }
 }
 
+// MARK: - Notebook Card View
 private struct NotebookCardView: View {
     let notebook: Notebook
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 22, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color(.secondarySystemBackground),
-                        Color(.tertiarySystemBackground)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
-            )
-            .overlay(alignment: .topLeading) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Image(systemName: "book.fill")
-                        .font(.title2)
-                        .foregroundStyle(.blue)
-
-                    Text(notebook.title)
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                        .lineLimit(2)
-
-                    Spacer()
-
-                    HStack {
-                        Label("\(notebook.pages.count)", systemImage: "doc.on.doc")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        Spacer()
-
-                        Text("Open")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.blue)
-                    }
-                }
-                .padding()
+        VStack(alignment: .leading, spacing: 8) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(coverGradient)
+                    .aspectRatio(3/4, contentMode: .fit)
+                Image(systemName: notebook.cover.imageName)
+                    .font(.largeTitle)
+                    .foregroundColor(.white.opacity(0.8))
             }
-            .frame(height: 160)
+            .shadow(color: .black.opacity(0.1), radius: 3, x: 0, y: 2)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(notebook.title)
+                    .font(.headline)
+                    .lineLimit(2)
+                    .foregroundColor(.primary)
+                HStack {
+                    Image(systemName: "doc.on.doc")
+                        .font(.caption2)
+                    Text("\(notebook.pages.count) pages")
+                        .font(.caption)
+                }
+                .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 4)
+        }
+        .padding(8)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(16)
+    }
+
+    private var coverGradient: LinearGradient {
+        switch notebook.cover {
+        case .none:
+            return LinearGradient(colors: [.gray.opacity(0.3), .gray.opacity(0.2)], startPoint: .top, endPoint: .bottom)
+        case .leather:
+            return LinearGradient(colors: [.brown, .brown.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
+        case .fabric:
+            return LinearGradient(colors: [.blue, .purple], startPoint: .top, endPoint: .bottom)
+        case .geometric:
+            return LinearGradient(colors: [.orange, .pink], startPoint: .leading, endPoint: .trailing)
+        case .abstract:
+            return LinearGradient(colors: [.green, .mint], startPoint: .top, endPoint: .bottomTrailing)
+        }
     }
 }
