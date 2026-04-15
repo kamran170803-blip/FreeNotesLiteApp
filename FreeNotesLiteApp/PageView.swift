@@ -96,9 +96,7 @@ struct PageView: View {
                                     page: page,
                                     toolPicker: toolPicker,
                                     onCanvasCreated: { canvas in
-                                        canvasViewForToolPicker = canvas
-                                        toolPicker?.setVisible(true, forFirstResponder: canvas)
-                                        canvas.becomeFirstResponder()
+                                        activateToolPicker(for: canvas)
                                     },
                                     currentPDFPageIndex: $currentPDFPageIndex
                                 )
@@ -273,6 +271,14 @@ struct PageView: View {
             picker.addObserver(toolPickerObserver)
             picker.setVisible(true, forFirstResponder: canvasViewForToolPicker ?? UIView())
             toolPicker = picker
+        }
+    }
+
+    private func activateToolPicker(for canvas: PKCanvasView) {
+        DispatchQueue.main.async {
+            canvasViewForToolPicker = canvas
+            toolPicker?.setVisible(true, forFirstResponder: canvas)
+            canvas.becomeFirstResponder()
         }
     }
 
